@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Slime Voltage</title>
+<style>
+body {
+    background: url('assets/background.png') no-repeat center center fixed;
+    background-size: cover;
+    font-family: Arial, sans-serif;
+    color: white;
+    text-align: center;
+    margin:0;
+    padding:0;
+}
+body::before {
+    content: '';
+    position: fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background: rgba(0,0,0,0.3);
+    pointer-events: none;
+    z-index: 0;
+}
+h1, h2 {position: relative; z-index: 1;}
+.row{
+  display:flex; flex-direction:column; align-items:center; margin:15px; position: relative; z-index: 1;
+}
+.line{
+  display:flex; align-items:center; gap:10px;
+}
+.locked{
+  opacity:0.4; pointer-events:none;
+}
+.bar{
+  width:120px; height:10px; background:#555; margin-top:5px; border-radius:10px; overflow:hidden;
+}
+.fill{height:100%; width:0%; background:#00ff88;}
+.pop{
+  position:absolute; color:#00ff88; font-weight:bold; animation:jump 0.8s forwards; z-index:2;
+}
+@keyframes jump{
+  0%{ transform:translateY(0); opacity:1;}
+  100%{ transform:translateY(-40px); opacity:0;}
+}
+#boostContainer{position:relative; display:inline-block; z-index:1;}
+#boost{cursor:pointer; transition:0.2s;}
+#boost:active{transform:scale(1.2);}
+#cooldown{
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.6); pointer-events:none;
+}
+.menu{
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:#333; border:4px solid #00ff88; padding:20px; border-radius:15px; z-index:2;
+}
+.hidden{display:none;}
+#slimeList img{width:60px; margin:10px; cursor:pointer;}
+</style>
+</head>
+<body>
+<h1>Slime Voltage</h1>
+<h2>Score: <span id="score">0</span></h2>
+
+<!-- MUSIQUE DE FOND -->
+<audio id="bgMusic" src="assets/musicBackground.mp3" loop></audio>
+<!-- SON CLICK UPGRADE -->
+<audio id="clickSound" src="assets/clickUpgrade.mp3"></audio>
+
+<!-- BOOST -->
+<div id="boostContainer">
+  <img id="boost" src="assets/tableBoost.png" width="120">
+  <div id="cooldown"></div>
+</div>
+<br><br>
+<div id="tables"></div>
+
+<!-- MENU SLIMES -->
+<div id="slimeMenu" class="menu hidden">
+  <h3>Choisir un slime</h3>
+  <div id="slimeList"></div>
+  <button onclick="closeMenu()">Fermer</button>
+</div>
+
+<script>
+// ===== DATA =====
+let score = 0;
+let ownedSlimes = [1];
+let tables = {
+  1:{level:1,progress:0,speed:1,unlocked:true,worker:1},
+  2:{level:1,progress:0,speed:1,unlocked:false,worker:1},
+  3:{level:1,progress:0,speed:1,unlocked:false,worker:1}
+};
+let unlockCost = {2:100,3:300};
+let currentTable = 1;
+
+// ===== INIT =====
+function createTables(){
+  let container = document.getElementById("tables");
+  for(let i=1;i<=3;i++){
+    container.innerHTML += `
+    <div class="row ${tables[i].unlocked ? "" : "locked"}" id="row${i}">
+      <div class="line">
+        <img id="table${i}" src="assets/table${i}.png" width="100" onclick="clickTable(${i})">
+        <img id="worker${i}" src="assets/slime1.png" width="60">
+        <div>
+          <div id="level${i}">Lv.1</div>
+          <button onclick="changeSlime(${i})">Changer</button>
+          <button onclick="upgrade(${i})">
+            Améliorer (<span id="cost${i}">50</span>)
+          </button>
+        </div>
+        <span id="unlock${i}">${tables[i].unlocked ? "" : "🔒 "+unlockCost[i]}</span>
+      </div>
+      <div class="bar"><div class="fill" id="fill${i}"></div></div>
+    </div>`;
+  }
+}
+createTables();
+updateCosts();
+updateLevels();
+
+// ===== SCORE =====
+function updateScore(){document.getElementById("score").textContent = score;}
+
+// ===== CLICK TABLE =====
+function clickTable(id){
+  let t = tables[id];
+  if(!t.unlocked) return;
+  if(t.progress < 100) return;
+  let gain = t.worker;
+  score += gain;
+  t.progress = 0;
+  animateTable(id);
+  popScore(id, gain);
+  updateScore();
+}
+
+// ===== PROGRESS =====
+setInterval(()=>{
+  for(let i=1;i<=3;i++){
+    let t = tables[i];
+    if(!t.unlocked) continue;
+    t.progress += t.speed;
+    if(t.progress>100) t.progress=100;
+    document.getElementById("fill"+i).style.width = t.progress+"%";
+  }
+  checkUnlocks();
+},100);
+
+// ===== BOOST TEMPORAIRE VISUEL, VITESSE CONSTANTE =====
+let boost = document.getElementById("boost");
+let boostReady = true;
+let boostDuration = 10000; // visuel boost
+let cooldownTime = 15000; // cooldown
+
+boost.onclick = () => {
+    if(!boostReady) return;
+    boostReady=false;
+
+    // Visuel boost
+    boost.src = "assets/tableBoostMouv.png";
+
+    // Vitesse x4 permanente
+    for(let i=1;i<=3;i++){
+        tables[i].speed *=4; // reste constante, jamais de ralentissement
+    }
+
+    // Fin du visuel
+    setTimeout(()=>{
+        boost.src = "assets/tableBoost.png";
+    }, boostDuration);
+
+    // Cooldown visuel
+    let start = Date.now();
+    let cooldownBar = document.getElementById("cooldown");
+    let cd = setInterval(()=>{
+        let elapsed = Date.now()-start;
+        let percent = elapsed / cooldownTime;
+        cooldownBar.style.height = (1-percent)*100+"%";
+        if(percent>=1){
+            clearInterval(cd);
+            cooldownBar.style.height="0%";
+            boostReady=true;
+        }
+    },50);
+};
+
+// ===== UPGRADE =====
+function upgrade(id){
+  let t=tables[id];
+  let cost=t.level*50;
+  if(score<cost){alert("Pas assez !"); return;}
+  score-=cost;
+  t.level++;
+  t.speed+=0.5;
+
+  // SON CLICK
+  const clickSound=document.getElementById("clickSound");
+  clickSound.currentTime=0;
+  clickSound.play().catch(e=>console.log(e));
+
+  updateScore();
+  updateCosts();
+  updateLevels();
+}
+
+// ===== UPDATE COSTS =====
+function updateCosts(){
+  for(let i=1;i<=3;i++){
+    let t=tables[i];
+    document.getElementById("cost"+i).textContent=t.level*50;
+  }
+}
+
+// ===== LEVELS =====
+function updateLevels(){
+  for(let i=1;i<=3;i++){
+    document.getElementById("level"+i).textContent="Lv."+tables[i].level;
+  }
+}
+
+// ===== UNLOCK =====
+function checkUnlocks(){
+  for(let i=2;i<=3;i++){
+    if(!tables[i].unlocked && score>=unlockCost[i]){
+      tables[i].unlocked=true;
+      document.getElementById("row"+i).classList.remove("locked");
+      document.getElementById("unlock"+i).remove();
+    }
+  }
+}
+
+// ===== ANIMATION TABLE =====
+function animateTable(id){
+  let table=document.getElementById("table"+id);
+  table.src="assets/table"+id+"Mouv.png";
+  setTimeout(()=>table.src="assets/table"+id+".png",300);
+}
+
+// ===== POP SCORE =====
+function popScore(id,val){
+  let row=document.getElementById("row"+id);
+  let el=document.createElement("div");
+  el.className="pop";
+  el.textContent="+"+val;
+  row.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+}
+
+// ===== MENU SLIMES =====
+function changeSlime(id){
+  if(!tables[id].unlocked) return;
+  currentTable=id;
+  let list=document.getElementById("slimeList");
+  list.innerHTML="";
+  ownedSlimes.forEach(s=>{
+    let img=document.createElement("img");
+    img.src="assets/slime"+s+".png";
+    img.onclick=()=>{
+      tables[currentTable].worker=s;
+      document.getElementById("worker"+currentTable).src=img.src;
+      closeMenu();
+    };
+    list.appendChild(img);
+  });
+  document.getElementById("slimeMenu").classList.remove("hidden");
+}
+function closeMenu(){document.getElementById("slimeMenu").classList.add("hidden");}
+
+// ===== MUSIQUE =====
+const bgMusic=document.getElementById("bgMusic");
+document.body.addEventListener('click',()=>{
+  if(bgMusic.paused) bgMusic.play().catch(e=>console.log(e));
+},{once:true});
+</script>
+</body>
+</html>
