@@ -82,6 +82,15 @@ h1, h2 {position: relative; z-index: 1;}
   <button onclick="closeMenu()">Fermer</button>
 </div>
 
+<!-- CHEST -->
+<div id="chestContainer" style="position:fixed; bottom:10px; left:50%; transform:translateX(-50%); z-index:2;">
+  <img id="chest" src="assets/chest.png" width="120" style="cursor:pointer;">
+  <div id="chestBar" style="display:none; background:#333; border:3px solid #00ff88; padding:10px; border-radius:10px; margin-top:5px;">
+    <div id="chestSlimes" style="display:flex; gap:10px; justify-content:center;"></div>
+    <button id="spinButton">Spin</button>
+  </div>
+</div>
+
 <script>
 // ===== DATA =====
 let score = 0;
@@ -163,7 +172,7 @@ boost.onclick = () => {
 
     // Vitesse x4 permanente
     for(let i=1;i<=3;i++){
-        tables[i].speed *=4; // reste constante, jamais de ralentissement
+        tables[i].speed *=4; // reste constante
     }
 
     // Fin du visuel
@@ -273,6 +282,35 @@ const bgMusic=document.getElementById("bgMusic");
 document.body.addEventListener('click',()=>{
   if(bgMusic.paused) bgMusic.play().catch(e=>console.log(e));
 },{once:true});
+
+// ===== CHEST =====
+const chest = document.getElementById("chest");
+const chestBar = document.getElementById("chestBar");
+const chestSlimes = document.getElementById("chestSlimes");
+const spinButton = document.getElementById("spinButton");
+const allSlimes = [1,2,3,4];
+
+chest.onclick = () => {
+  chestBar.style.display = chestBar.style.display === "none" ? "block" : "none";
+  chestSlimes.innerHTML = "";
+  allSlimes.forEach(s=>{
+    const img = document.createElement("img");
+    img.src = "assets/slime"+s+".png";
+    img.width = 60;
+    chestSlimes.appendChild(img);
+  });
+};
+
+spinButton.onclick = () => {
+  const randomIndex = Math.floor(Math.random()*allSlimes.length);
+  const gainedSlime = allSlimes[randomIndex];
+  if(!ownedSlimes.includes(gainedSlime)){
+    ownedSlimes.push(gainedSlime);
+    alert("Tu as obtenu : slime"+gainedSlime+" !");
+  } else {
+    alert("Tu as obtenu un slime que tu possèdes déjà !");
+  }
+};
 </script>
 </body>
 </html>
