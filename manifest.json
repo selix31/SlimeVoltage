@@ -1,0 +1,16 @@
+{
+  "name": "Ma Ferme Idle",
+  "short_name": "Ma Ferme",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#bceaa0",
+  "theme_color": "#4f9e45",
+  "icons": [
+    {
+      "src": "Vache-Icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
