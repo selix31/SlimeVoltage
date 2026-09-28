@@ -1,10 +1,17 @@
-
 <!doctype html>
 <html lang="fr">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
 <title>Ma Ferme Idle</title>
+
+<!-- Icône du jeu -->
+<link rel="icon" type="image/png" href="Vache-Icon.png">
+<link rel="apple-touch-icon" href="Vache-Icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#4f9e45">
+
 <style>
 :root{--green:#4f9e45;--dark:#245a35;--gold:#ffd45e;--cream:#fff7dc;--ink:#263d2a}
 *{box-sizing:border-box}
@@ -55,10 +62,13 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(
 }
 </style>
 </head>
+
 <body>
 <main class="app">
+
 <header class="top">
 <div class="brand">🌻 Ma Ferme Idle</div>
+
 <div class="wallet">
 <div class="pill">🪙 <span id="money">50</span></div>
 <div class="pill">🌾 Récoltes : <span id="harvests">0</span></div>
@@ -77,31 +87,59 @@ body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(
 </section>
 
 <section class="panels">
+
 <div class="panel">
 <h2>🛒 Boutique de la ferme</h2>
+
 <div class="shopgrid">
-<button class="shopitem" id="buyPlot"><strong>🪵 Nouvelle parcelle</strong><small id="plotCost">Coût : 40 🪙</small></button>
-<button class="shopitem" id="buyWorker"><strong>👨‍🌾 Embaucher un ouvrier</strong><small id="workerCost">Coût : 100 🪙</small></button>
-<button class="shopitem" id="buySeeds"><strong>🌱 Meilleures semences</strong><small id="seedCost">Coût : 75 🪙</small></button>
-<button class="shopitem" id="buySpeed"><strong>💨 Croissance rapide</strong><small id="speedCost">Coût : 90 🪙</small></button>
+
+<button class="shopitem" id="buyPlot">
+<strong>🪵 Nouvelle parcelle</strong>
+<small id="plotCost">Coût : 40 🪙</small>
+</button>
+
+<button class="shopitem" id="buyWorker">
+<strong>👨‍🌾 Embaucher un ouvrier</strong>
+<small id="workerCost">Coût : 100 🪙</small>
+</button>
+
+<button class="shopitem" id="buySeeds">
+<strong>🌱 Meilleures semences</strong>
+<small id="seedCost">Coût : 75 🪙</small>
+</button>
+
+<button class="shopitem" id="buySpeed">
+<strong>💨 Croissance rapide</strong>
+<small id="speedCost">Coût : 90 🪙</small>
+</button>
+
 </div>
+
 <div class="status" id="status">Bienvenue à la ferme !</div>
 </div>
 
 <div class="panel">
+
 <h2>📋 Ton exploitation</h2>
+
 <p>🥕 Valeur d'une récolte : <b><span id="cropValue">12</span> pièces</b></p>
 <p>⏱️ Temps de pousse : <b><span id="growTime">8</span> secondes</b></p>
 <p>🌱 Parcelles disponibles : <b><span id="plotCount">8</span></b></p>
 <p>💰 Revenus automatiques : <b><span id="autoRate">0</span> pièces / seconde</b></p>
+
 <div class="actionrow">
 <button class="btn" id="saveBtn">💾 Sauvegarder</button>
 <button class="btn secondary" id="resetBtn">↻ Recommencer</button>
 </div>
+
 </div>
+
 </section>
 
-<div class="footer">Ta progression est sauvegardée automatiquement sur cet appareil.</div>
+<div class="footer">
+Ta progression est sauvegardée automatiquement sur cet appareil.
+</div>
+
 </main>
 
 <script>
@@ -117,6 +155,7 @@ crops:{}
 });
 
 let game;
+
 try{
 game=JSON.parse(localStorage.getItem('maFermeIdleSave'))||initial();
 }catch(e){
@@ -141,37 +180,56 @@ $('hint').textContent=t;
 }
 
 function plant(i){
+
 if(game.crops[i]){
+
 const c=game.crops[i];
 
 if(Date.now()-c.planted>=growMs()){
+
 game.money+=cropValue();
 game.harvests++;
 delete game.crops[i];
+
 say('Belle récolte ! +'+cropValue()+' pièces 🥕');
+
 render();
 save(false);
+
 }else{
+
 const left=Math.ceil((growMs()-(Date.now()-c.planted))/1000);
+
 say('Ça pousse encore… '+left+' seconde(s).');
 }
+
 return;
 }
 
 game.crops[i]={planted:Date.now()};
+
 say('Tu as planté des carottes ! Reviens dans quelques secondes.');
+
 render();
 save(false);
 }
 
 function render(){
+
 $('money').textContent=Math.floor(game.money).toLocaleString('fr-CA');
 $('harvests').textContent=game.harvests;
 $('workers').textContent=game.workers;
 $('cropValue').textContent=cropValue();
-$('growTime').textContent=(growMs()/1000).toFixed(1).replace('.',',');
+
+$('growTime').textContent=
+(growMs()/1000).toFixed(1).replace('.',',');
+
 $('plotCount').textContent=game.plots;
-$('autoRate').textContent=(game.workers*cropValue()/Math.max(4,growMs()/1000)).toFixed(1).replace('.',',');
+
+$('autoRate').textContent=
+(game.workers*cropValue()/Math.max(4,growMs()/1000))
+.toFixed(1).replace('.',',');
+
 $('plotCost').textContent='Coût : '+costs().plot+' 🪙';
 $('workerCost').textContent='Coût : '+costs().worker+' 🪙';
 $('seedCost').textContent='Coût : '+costs().seeds+' 🪙';
@@ -183,71 +241,110 @@ $('buySeeds').disabled=game.money<costs().seeds;
 $('buySpeed').disabled=game.money<costs().speed;
 
 const wrap=$('plots');
+
 wrap.innerHTML='';
 
 for(let i=0;i<game.plots;i++){
-const c=game.crops[i];
-const el=document.createElement('button');
-const ready=c&&Date.now()-c.planted>=growMs();
 
-el.className='plot '+(!c?'empty':'')+(ready?' ready':'');
+const c=game.crops[i];
+
+const el=document.createElement('button');
+
+const ready=
+c&&Date.now()-c.planted>=growMs();
+
+el.className=
+'plot '+(!c?'empty':'')+(ready?' ready':'');
+
 el.innerHTML=c
 ?`<span class="crop">${ready?'🥕':'🌱'}</span><span class="label">${ready?'RÉCOLTER':'Ça pousse…'}</span>`
 :`<span class="crop">🟤</span><span class="label">Planter</span>`;
 
 el.addEventListener('click',()=>plant(i));
+
 wrap.appendChild(el);
 }
 }
 
 function save(show=true){
+
 try{
-localStorage.setItem('maFermeIdleSave',JSON.stringify(game));
+
+localStorage.setItem(
+'maFermeIdleSave',
+JSON.stringify(game)
+);
+
 if(show)say('Partie sauvegardée ! 💾');
+
 }catch(e){
-if(show)say('Sauvegarde indisponible dans ce navigateur.');
+
+if(show)say(
+'Sauvegarde indisponible dans ce navigateur.'
+);
+
 }
 }
 
 $('buyPlot').onclick=()=>{
+
 let c=costs().plot;
+
 if(game.money>=c){
+
 game.money-=c;
 game.plots++;
+
 say('Une nouvelle parcelle est prête !');
+
 render();
 save(false);
 }
 };
 
 $('buyWorker').onclick=()=>{
+
 let c=costs().worker;
+
 if(game.money>=c){
+
 game.money-=c;
 game.workers++;
+
 say('Un ouvrier rejoint la ferme !');
+
 render();
 save(false);
 }
 };
 
 $('buySeeds').onclick=()=>{
+
 let c=costs().seeds;
+
 if(game.money>=c){
+
 game.money-=c;
 game.seeds++;
+
 say('Tes récoltes valent maintenant plus cher !');
+
 render();
 save(false);
 }
 };
 
 $('buySpeed').onclick=()=>{
+
 let c=costs().speed;
+
 if(game.money>=c){
+
 game.money-=c;
 game.speed++;
+
 say('Les cultures poussent plus vite !');
+
 render();
 save(false);
 }
@@ -256,48 +353,79 @@ save(false);
 $('saveBtn').onclick=()=>save(true);
 
 $('resetBtn').onclick=()=>{
+
 if(confirm('Recommencer la ferme depuis le début ?')){
+
 game=initial();
+
 save(false);
+
 say('Nouvelle ferme créée !');
+
 render();
 }
 };
 
 // Les ouvriers récoltent les cultures mûres et replantent.
 setInterval(()=>{
+
 let changed=false;
 
 for(let i=0;i<game.plots;i++){
+
 let c=game.crops[i];
 
-if(c&&Date.now()-c.planted>=growMs()&&game.workers>0){
+if(
+c &&
+Date.now()-c.planted>=growMs() &&
+game.workers>0
+){
+
 game.money+=cropValue();
 game.harvests++;
+
 delete game.crops[i];
+
 changed=true;
 }
 }
 
 if(game.workers>0){
-for(let i=0;i<game.plots&&i<game.workers;i++){
+
+for(
+let i=0;
+i<game.plots&&i<game.workers;
+i++
+){
+
 if(!game.crops[i]){
-game.crops[i]={planted:Date.now()};
+
+game.crops[i]={
+planted:Date.now()
+};
+
 changed=true;
 }
 }
 }
 
 if(changed){
+
 render();
 save(false);
+
 }else{
+
 render();
+
 }
+
 },1000);
 
 render();
+
 })();
 </script>
+
 </body>
 </html>
